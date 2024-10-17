@@ -1,0 +1,25 @@
+{
+  "name": "dwaelectron",
+  "version": "1.0.0",
+  "description": "An Electron app with persistent tabs",
+  "main": "src/main.js",
+  "build": {
+    "appId": "com.dwaelectron",
+    "productName": "DWAElectron",
+    "win": {
+      "icon": "assets/DWAIconTransparent.ico"
+    },
+    "directories": {
+      "buildResources": "assets"
+    }
+  },
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^25.3.1",
+    "electron-builder": "^24.13.3"
+  }
+}

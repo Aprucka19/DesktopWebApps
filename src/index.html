@@ -1,0 +1,126 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+    <title>DesktopWebApps</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1e1e1e; /* Dark background */
+            color: #ffffff; /* Light text color */
+        }
+        #tabs {
+            display: flex;
+            background-color: #333; /* Darker tab bar */
+            align-items: center;
+            padding: 5px;
+        }
+        .tab {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px; /* Increased horizontal padding */
+            cursor: pointer;
+            background-color: #444; /* Dark tab background */
+            margin-right: 10px;
+            color: #fff; /* Light text color */
+            border-radius: 3px;
+        }
+        .tab span {
+            font-weight: normal;
+        }
+        .tab.active span {
+            font-weight: normal;
+        }
+        .tab.active {
+            background-color: #555; /* Slightly lighter for active tab */
+        }
+        #webview-container {
+            width: 100%;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        webview {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        webview.active {
+            display: flex;
+        }
+        #add-tab {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #444;
+            color: #fff;
+            border-radius: 3px;
+        }
+        #refresh-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center content horizontally */
+            width: 30px;
+            height: 40px; /* Match the height of the tabs */
+            cursor: pointer;
+            background-color: #444;
+            color: #fff;
+            border-radius: 3px;
+            margin-left: auto; /* Push to the right side */
+            font-size: 18px;
+            line-height: normal; /* Reset line-height to normal */
+        }
+        #add-tab-input {
+            display: none;
+            width: 150px;
+            padding: 5px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background-color: #333;
+            color: #fff;
+        }
+        .close-btn {
+            margin-left: 10px; /* Increased margin */
+            color: #999; /* Default color */
+            cursor: pointer;
+            font-size: 14px; /* Adjust size as needed */
+            transition: color 0.2s ease; /* Smooth color transition */
+        }
+        .close-btn:hover {
+            color: red; /* Red color on hover */
+        }
+        .tab.drag-over {
+            border: 2px dashed #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="tabs">
+        <!-- We'll dynamically add tabs here -->
+        <div id="add-tab">+</div>
+        <input type="text" id="add-tab-input" placeholder="Enter URL" />
+        <div id="refresh-tab">↻</div>
+    </div>
+    <div id="webview-container">
+        <!-- Webviews will be added here -->
+    </div>
+
+    <!-- Custom URL Input Dialog -->
+    <div id="url-input-dialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid #ccc;">
+        <input type="text" id="url-input" placeholder="Enter URL" />
+        <button id="url-submit">Submit</button>
+        <button id="url-cancel">Cancel</button>
+    </div>
+
+    <script src="index.js">
+    </script>
+</body>
+</html>
