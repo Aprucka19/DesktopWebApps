@@ -206,7 +206,7 @@ function restoreTabs() {
     console.log('Restoring tabs:', savedTabs); // Debug log
 
     if (savedTabs.length === 0) {
-        createTab('https://www.example.com');
+        createTab('https://www.google.com');
     } else {
         savedTabs.forEach((tab) => {
             createTab(tab.url, false, tab.name);
