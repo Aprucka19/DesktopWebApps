@@ -1,5 +1,5 @@
 // preload.js
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, shell } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     sendSaveTabs: (tabs) => ipcRenderer.send('save-tabs', tabs),

@@ -1,11 +1,18 @@
 // main.js
-const { app, BrowserWindow, ipcMain, Menu } = require('electron'); // Import Menu
+const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron'); // Import 'shell'
 const path = require('path');
 const fs = require('fs');
 
 let mainWindow;
 
-
+app.on('web-contents-created', (event, contents) => {
+    if (contents.getType() === 'webview') {
+        contents.setWindowOpenHandler(({ url }) => {
+            shell.openExternal(url);
+            return { action: 'deny' };
+        });
+    }
+});
 
 // Path to the tabs data file
 const tabsDataPath = path.join(app.getPath('userData'), 'tabsData.json');
@@ -77,18 +84,28 @@ function createWindow() {
   const windowState = readWindowState();
 
   mainWindow = new BrowserWindow({
-      width: windowState.width,
-      height: windowState.height,
-      x: windowState.x,
-      y: windowState.y,
-      icon: path.join(__dirname, '../Assets/DWAIconTransparent.ico'),
-      webPreferences: {
-          preload: path.join(__dirname, 'preload.js'),
-          contextIsolation: true,
-          nodeIntegration: false,
-          webviewTag: true,
-          webSecurity: true
-      }
+    width: windowState.width,
+    height: windowState.height,
+    x: windowState.x,
+    y: windowState.y,
+    icon: path.join(__dirname, '../Assets/DWAIconTransparent.ico'),
+    webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        webviewTag: true, 
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+        enableRemoteModule: false,
+        nodeIntegrationInSubFrames: false,
+        sandbox: false,
+        // Ensure nativeWindowOpen is not set to true
+    }
+});
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
   });
 
   if (windowState.isMaximized) {
@@ -138,6 +155,7 @@ ipcMain.on('tabs-saved', () => {
   saveWindowState();
   app.quit();
 });
+
 
 app.on('ready', createWindow);
 

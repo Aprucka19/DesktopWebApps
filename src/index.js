@@ -35,7 +35,9 @@ function injectWebviewStyles(webview) {
     webview.addEventListener('click', () => {
         resetAddTab();
     });
+
 }
+
 
 function createTab(url, select = true, name = null) {
     const id = generateUniqueId();
