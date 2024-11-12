@@ -1,5 +1,5 @@
 // main.js
-const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron'); // Import 'shell'
+const { app, BrowserWindow, ipcMain, Menu, shell, powerMonitor } = require('electron'); // Import 'shell' and 'powerMonitor'
 const path = require('path');
 const fs = require('fs');
 
@@ -29,10 +29,33 @@ function ensureDirectoryExistence(filePath) {
 // Function to read the saved tabs data
 function readTabsData() {
     try {
-        const data = fs.readFileSync(tabsDataPath);
-        return JSON.parse(data);
+        if (!fs.existsSync(tabsDataPath)) {
+            console.log('No saved tabs file found');
+            return [];
+        }
+
+        const data = fs.readFileSync(tabsDataPath, 'utf8');
+        const parsedData = JSON.parse(data);
+        
+        // Validate the data
+        if (!Array.isArray(parsedData)) {
+            console.error('Invalid tabs data format');
+            return [];
+        }
+
+        console.log('Successfully read', parsedData.length, 'tabs');
+        return parsedData;
     } catch (e) {
-        return [];
+        console.error('Error reading tabs data:', e);
+        
+        // Try to read the temp file if it exists
+        try {
+            const tempData = fs.readFileSync(tabsDataPath + '.temp', 'utf8');
+            return JSON.parse(tempData);
+        } catch (tempError) {
+            console.error('No valid backup file found');
+            return [];
+        }
     }
 }
 
@@ -40,13 +63,25 @@ function readTabsData() {
 function saveTabsData(tabs) {
     try {
         ensureDirectoryExistence(tabsDataPath);
-        fs.writeFileSync(tabsDataPath, JSON.stringify(tabs, null, 2)); // Pretty print JSON
-        console.log('Tabs data saved successfully.');
+          
+        // First write to a temporary file
+        const tempPath = tabsDataPath + '.temp';
+        fs.writeFileSync(tempPath, JSON.stringify(tabs, null, 2));
+        
+        // Then rename the temp file to the actual file (atomic operation)
+        fs.renameSync(tempPath, tabsDataPath);
+        
+        console.log('Tabs data saved successfully:', tabs.length, 'tabs');
     } catch (error) {
         console.error('Error saving tabs data:', error);
+        // If there was an error, try to save directly to the main file
+        try {
+            fs.writeFileSync(tabsDataPath, JSON.stringify(tabs, null, 2));
+        } catch (fallbackError) {
+            console.error('Fallback save failed:', fallbackError);
+        }
     }
 }
-
 const windowStatePath = path.join(app.getPath('userData'), 'windowState.json');
 
 function saveWindowState() {
@@ -130,15 +165,29 @@ function createWindow() {
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
-      mainWindow.webContents.send('save-tabs');
+      mainWindow.webContents.send('save-tabs', true);
     }
   });
 
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
-}
 
+  powerMonitor.on('suspend', () => {
+    console.log('System is going to sleep');
+    mainWindow.webContents.send('save-tabs', false);
+  });
+
+  powerMonitor.on('lock-screen', () => {
+    console.log('System is locking');
+    mainWindow.webContents.send('save-tabs', false);
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('Received SIGTERM signal');
+    mainWindow.webContents.send('save-tabs', true);
+  });
+}
 // Handle IPC events from the renderer process
 ipcMain.on('save-tabs', (event, tabs) => {
     console.log('Received save-tabs message with tabs:', tabs); // Debug log
@@ -166,3 +215,4 @@ app.on('window-all-closed', function () {
 app.on('activate', function () {
     if (mainWindow === null) createWindow();
 });
+

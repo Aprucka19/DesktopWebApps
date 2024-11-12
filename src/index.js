@@ -1,5 +1,6 @@
 let tabs = [];
 let activeTabId = null;
+let isSaving = false;
 
 function generateUniqueId() {
     return '_' + Math.random().toString(36).substr(2, 9);
@@ -77,6 +78,7 @@ function createTab(url, select = true, name = null) {
     tabElement.addEventListener('drop', drop);
     tabElement.addEventListener('dragenter', dragEnter);
     tabElement.addEventListener('dragleave', dragLeave);
+    tabElement.addEventListener('dragend', dragEnd);
 
     tabsContainer.insertBefore(tabElement, addTabButton);
 
@@ -186,6 +188,8 @@ function selectTab(id) {
 
     refreshButton.style.opacity = activeTabId ? '1' : '0.5';
     refreshButton.style.pointerEvents = activeTabId ? 'auto' : 'none';
+
+    resetTabStyles();
 }
 
 function removeTab(id) {
@@ -225,23 +229,41 @@ function restoreTabs() {
 }
 
 // Listen for the 'save-tabs' event from the main process
-window.electronAPI.onSaveTabs(() => {
-  saveTabs();
+window.electronAPI.onSaveTabs((event, isQuitting) => {
+    if (isQuitting) {
+        saveAndQuit();
+    } else {
+        saveTabs();
+    }
 });
 
 function saveTabs() {
-  const tabsData = tabs.map(tab => ({
-      id: tab.id,
-      url: tab.url,
-      name: tab.name
-  }));
-  window.electronAPI.sendSaveTabs(tabsData);
-  // Notify the main process that tabs have been saved
-  window.electronAPI.tabsSaved();
+    if (isSaving) return; // Prevent multiple simultaneous saves
+    
+    try {
+        isSaving = true;
+        console.log('Saving tabs:', tabs); // Debug log
+        
+        const tabsData = tabs.map(tab => ({
+            id: tab.id,
+            url: tab.url,
+            name: tab.name
+        }));
+
+        window.electronAPI.sendSaveTabs(tabsData);
+        isSaving = false;
+    } catch (error) {
+        console.error('Error saving tabs:', error);
+        isSaving = false;
+    }
 }
 
-// Call saveTabs when needed, e.g., before closing the window
-// window.addEventListener('beforeunload', saveTabs);
+// Add periodic saving
+setInterval(() => {
+    if (tabs.length > 0) {
+        saveTabs();
+    }
+}, 60000); // Save every minute
 
 addTabButton.addEventListener('click', () => {
     addTabButton.style.display = 'none';
@@ -292,6 +314,14 @@ restoreTabs();
 function dragStart(e) {
     e.dataTransfer.setData('text/plain', e.target.dataset.id);
     e.target.style.opacity = '0.5';
+    
+    // Add cleanup in case drag operation ends unexpectedly
+    setTimeout(() => {
+        const allTabs = document.querySelectorAll('.tab');
+        allTabs.forEach(tab => {
+            tab.style.opacity = '1';
+        });
+    }, 1000);
 }
 
 function dragOver(e) {
@@ -312,7 +342,7 @@ function drop(e) {
     const draggedTab = document.querySelector(`.tab[data-id="${draggedTabId}"]`);
     const dropZone = e.target.closest('.tab');
 
-    if (draggedTab !== dropZone) {
+    if (draggedTab && dropZone && draggedTab !== dropZone) {
         const draggedIndex = Array.from(tabsContainer.children).indexOf(draggedTab);
         const dropIndex = Array.from(tabsContainer.children).indexOf(dropZone);
 
@@ -327,6 +357,67 @@ function drop(e) {
         tabs.splice(dropIndex, 0, draggedTabData);
     }
 
-    dropZone.classList.remove('drag-over');
-    draggedTab.style.opacity = '1';
+    // Reset opacity for all tabs
+    const allTabs = document.querySelectorAll('.tab');
+    allTabs.forEach(tab => {
+        tab.style.opacity = '1';
+        tab.classList.remove('drag-over');
+    });
 }
+
+// Add a dragend handler to ensure opacity is reset
+function dragEnd(e) {
+    const allTabs = document.querySelectorAll('.tab');
+    allTabs.forEach(tab => {
+        tab.style.opacity = '1';
+        tab.classList.remove('drag-over');
+    });
+}
+
+// Add this new function
+function saveAndQuit() {
+    if (isSaving) return;
+    
+    try {
+        isSaving = true;
+        console.log('Saving tabs before quit:', tabs);
+        
+        const tabsData = tabs.map(tab => ({
+            id: tab.id,
+            url: tab.url,
+            name: tab.name
+        }));
+
+        window.electronAPI.sendSaveTabs(tabsData);
+        
+        // Only call tabsSaved when actually quitting
+        setTimeout(() => {
+            window.electronAPI.tabsSaved();
+            isSaving = false;
+        }, 500);
+    } catch (error) {
+        console.error('Error saving tabs before quit:', error);
+        isSaving = false;
+    }
+}
+
+// Add this function to periodically reset tab styles
+function resetTabStyles() {
+    const allTabs = document.querySelectorAll('.tab');
+    allTabs.forEach(tab => {
+        tab.style.opacity = '1';
+        tab.classList.remove('drag-over');
+        
+        // Reset text color for tab and its children
+        tab.style.color = '#fff';
+        const span = tab.querySelector('span');
+        if (span) {
+            span.style.color = '#fff';
+        }
+    });
+}
+
+// Call resetTabStyles periodically
+setInterval(resetTabStyles, 30000); // Reset every 30 seconds
+
+
