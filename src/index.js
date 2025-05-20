@@ -681,6 +681,7 @@ function startPandoraMonitoring(webview, url) {
     // Track the current song to avoid repeated plays
     let currentSong = null;
     let currentArtist = null;
+    let lastCheckTime = Date.now();
     
     // Clear existing interval if there is one
     if (webview._songCheckInterval) {
@@ -713,7 +714,7 @@ function startPandoraMonitoring(webview, url) {
     // Mark this webview as having Spotify enabled
     webview._spotifyEnabled = true;
     
-    // Direct DOM inspection with simple polling
+    // Direct DOM inspection with more frequent polling
     const checkInterval = setInterval(() => {
         webview.executeJavaScript(`
             (function() {
@@ -826,7 +827,7 @@ function startPandoraMonitoring(webview, url) {
         .catch(error => {
             window.electronAPI.logToTerminal('ERROR executing script: ' + error.message);
         });
-    }, 5000); // Check every 5 seconds
+    }, 1000); // Check every 1 second instead of 5 seconds
     
     // Store interval ID to clean up later
     webview._songCheckInterval = checkInterval;

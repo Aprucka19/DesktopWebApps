@@ -1,11 +1,36 @@
 const SpotifyWebApi = require('spotify-web-api-node');
+const fs = require('fs');
+const path = require('path');
+const { app } = require('electron');
 
 class SpotifyController {
     constructor() {
+        // Try to load config from config.js
+        let config;
+        try {
+            config = require('./config');
+        } catch (error) {
+            console.error('Error loading config.js file:', error);
+            // Fallback to example config (for development only)
+            try {
+                config = require('./config.example');
+                console.warn('Using example config! Please create a proper config.js file for production use.');
+            } catch (fallbackError) {
+                console.error('Failed to load fallback config:', fallbackError);
+                config = {
+                    spotify: {
+                        clientId: '',
+                        clientSecret: '',
+                        redirectUri: 'http://127.0.0.1:8888/callback'
+                    }
+                };
+            }
+        }
+
         this.spotifyApi = new SpotifyWebApi({
-            clientId: 'f600b6ed923440d89999b854f0d1b307',
-            clientSecret: 'e63cf9bd7b7943479702862f97895408',
-            redirectUri: 'http://127.0.0.1:8888/callback'
+            clientId: config.spotify.clientId,
+            clientSecret: config.spotify.clientSecret,
+            redirectUri: config.spotify.redirectUri
         });
         this.isAuthorized = false;
         this.player = null;

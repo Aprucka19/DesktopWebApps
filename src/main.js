@@ -139,7 +139,7 @@ function createWindow() {
         nodeIntegrationInSubFrames: false,
         sandbox: false,
     }
-  });
+});
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -169,7 +169,14 @@ function createWindow() {
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
-      mainWindow.webContents.send('save-tabs', true);
+      mainWindow.webContents.send('save-tabs', false);
+      
+      // Add a small delay to ensure tabs are saved before quitting
+      setTimeout(() => {
+        isQuitting = true;
+        authServer.stop();
+        app.quit();
+      }, 500);
     }
   });
 
