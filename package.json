@@ -1,6 +1,6 @@
 {
   "name": "desktopwebapps",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An Electron app with persistent tabs",
   "main": "src/main.js",
   "build": {
@@ -22,5 +22,10 @@
   "devDependencies": {
     "electron": "^25.3.1",
     "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "dompurify": "^3.0.6",
+    "express": "^4.21.2",
+    "spotify-web-api-node": "^5.0.2"
   }
 }

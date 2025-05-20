@@ -2,8 +2,12 @@
 const { app, BrowserWindow, ipcMain, Menu, shell, powerMonitor } = require('electron'); // Import 'shell' and 'powerMonitor'
 const path = require('path');
 const fs = require('fs');
+const SpotifyController = require('./spotify-controller');
+const AuthServer = require('./auth-server');
 
 let mainWindow;
+let spotifyController = new SpotifyController();
+let authServer = new AuthServer(spotifyController);
 
 app.on('web-contents-created', (event, contents) => {
     if (contents.getType() === 'webview') {
@@ -134,9 +138,8 @@ function createWindow() {
         enableRemoteModule: false,
         nodeIntegrationInSubFrames: false,
         sandbox: false,
-        // Ensure nativeWindowOpen is not set to true
     }
-});
+  });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -160,6 +163,7 @@ function createWindow() {
 
   app.on('before-quit', () => {
     isQuitting = true;
+    authServer.stop();
   });
 
   mainWindow.on('close', (event) => {
@@ -188,6 +192,18 @@ function createWindow() {
     mainWindow.webContents.send('save-tabs', true);
   });
 }
+
+// Start the auth server when the app starts
+app.whenReady().then(() => {
+    authServer.start();
+    createWindow();
+
+    // Add handler for log messages
+    ipcMain.on('log-to-terminal', (event, message) => {
+        console.log(message);
+    });
+});
+
 // Handle IPC events from the renderer process
 ipcMain.on('save-tabs', (event, tabs) => {
     console.log('Received save-tabs message with tabs:', tabs); // Debug log
@@ -205,8 +221,14 @@ ipcMain.on('tabs-saved', () => {
   app.quit();
 });
 
+// Add these new IPC handlers before app.on('ready', createWindow)
+ipcMain.handle('spotify-play-song', async (event, songName, artistName) => {
+    return await spotifyController.searchAndPlay(songName, artistName);
+});
 
-app.on('ready', createWindow);
+ipcMain.handle('spotify-authorize', async () => {
+    return await spotifyController.authorize();
+});
 
 app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') app.quit();

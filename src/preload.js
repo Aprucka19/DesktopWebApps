@@ -1,9 +1,12 @@
 // preload.js
-const { contextBridge, ipcRenderer, shell } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    sendSaveTabs: (tabs) => ipcRenderer.send('save-tabs', tabs),
     getTabs: () => ipcRenderer.sendSync('get-tabs'),
     onSaveTabs: (callback) => ipcRenderer.on('save-tabs', callback),
-    tabsSaved: () => ipcRenderer.send('tabs-saved')
+    saveTabs: (tabs) => ipcRenderer.send('save-tabs', tabs),
+    tabsSaved: () => ipcRenderer.send('tabs-saved'),
+    spotifyPlaySong: (songName, artistName) => ipcRenderer.invoke('spotify-play-song', songName, artistName),
+    spotifyAuthorize: () => ipcRenderer.invoke('spotify-authorize'),
+    logToTerminal: (message) => ipcRenderer.send('log-to-terminal', message)
 });
